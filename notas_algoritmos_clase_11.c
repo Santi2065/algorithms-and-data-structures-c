@@ -17,3 +17,12 @@
 //la raiz puede tener una clave
 //todos los nodos tienen hasta claves+1 hijos
 //todos los nodos hoja estan al mismo nivel
+
+//search -> lineal -> O(t*logt (n))
+//       -> binaria -> O(logt (n))
+//insert -> O(t*logt (n)
+
+//2-3-4-tree
+//B-Tree con t=2
+
+//b+ tree
