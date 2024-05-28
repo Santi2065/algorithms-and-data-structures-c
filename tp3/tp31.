@@ -1,0 +1,190 @@
+#include "tp3.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
+#define REHASH_THRESHOLD 0.75
+
+struct dictionary {
+  unsigned int table_size;
+  destroy_f destroy;
+  struct node **table;
+  size_t size;
+};
+
+struct node {
+  char *key;
+  void *value;
+};
+
+
+dictionary_t *dictionary_create(destroy_f destroy) {
+  dictionary_t *dictionary = malloc(sizeof(dictionary_t));
+  if (dictionary == NULL) {
+    return NULL;
+  }
+  dictionary->table_size = 10000; // Initial table size
+  dictionary->table = calloc(dictionary->table_size, sizeof(struct node *));
+  if (dictionary->table == NULL) {
+    free(dictionary);
+    return NULL;
+  }
+
+  dictionary->destroy = destroy;
+  dictionary->size = 0;
+  return dictionary;
+}
+
+unsigned int hash(const char *key, dictionary_t *dictionary) {
+   unsigned int hash = 0;
+    while (*key) {
+        hash = (hash << 5) + *key++;
+    }
+    return hash % dictionary->table_size;
+}
+
+bool rehash(dictionary_t *dictionary) {
+  // Allocate memory for a new, larger table
+  unsigned int new_size = dictionary->table_size * 2;  // Double the table size
+  struct node **new_table = malloc(new_size * sizeof(struct node *));
+  if (new_table == NULL) {
+    return false; // Memory allocation error
+  }
+
+  // Initialize all slots in the new table to NULL
+  memset(new_table, 0, new_size * sizeof(struct node *));
+
+  // Reinsert all key-value pairs into the new table
+  for (size_t i = 0; i < dictionary->table_size; i++) {
+    if (dictionary->table[i] != NULL) {
+      unsigned int new_index = hash(dictionary->table[i]->key,dictionary) % new_size;
+      new_table[new_index] = dictionary->table[i];
+      dictionary->table[i] = NULL; // Avoid double-free during cleanup
+    }
+  }
+
+  // Free the old table
+  free(dictionary->table);
+  dictionary->table = new_table;
+  dictionary->table_size = new_size; // Update table size
+
+  return true;
+}
+
+bool dictionary_put(dictionary_t *dictionary, const char *key, void *value) {
+  unsigned int index = hash(key, dictionary);
+
+  // Check for existing key
+  if (dictionary->table[index] != NULL) {
+    if (strcmp(dictionary->table[index]->key, key) == 0) {
+      // Key already exists, update value
+      if (dictionary->destroy != NULL) {
+        dictionary->destroy(dictionary->table[index]->value); // Free previous value if destroy function exists
+      }
+      dictionary->table[index]->value = value;
+      return true;
+    }
+    // Handle potential collisions (you'll need to implement this part)
+  }
+
+  // Allocate memory for the new key
+  dictionary->table[index] = malloc(sizeof(struct node));
+  if (dictionary->table[index] == NULL) {
+    return false; // Memory allocation error
+  }
+
+  dictionary->table[index]->key = malloc(strlen(key) + 1);
+  if (dictionary->table[index]->key == NULL) {
+    free(dictionary->table[index]);
+    return false; // Memory allocation error
+  }
+
+  // Copy key and value
+  strcpy(dictionary->table[index]->key, key);
+  dictionary->table[index]->value = value;
+  dictionary->size++;
+
+  // Check load factor and rehash if necessary
+  if ((double)dictionary->size / dictionary->table_size >= REHASH_THRESHOLD) {
+    return rehash(dictionary); // Rehash the dictionary
+  }
+
+  return true;
+}
+
+void *dictionary_get(dictionary_t *dictionary, const char *key, bool *err) {
+  unsigned int index = hash(key, dictionary);
+  if (dictionary->table[index] == NULL || dictionary->table[index]->key == NULL) {
+    *err = true;
+    return NULL; // Key not found (empty slot)
+  }
+  *err = false;
+  return dictionary->table[index]->value;
+}
+
+
+bool dictionary_delete(dictionary_t *dictionary, const char *key) {
+  unsigned int index = hash(key, dictionary);
+  if (dictionary->table[index] == NULL|| dictionary->table[index]->key == NULL) {
+    return false; // Key not found
+  }
+
+  if (dictionary->destroy != NULL) {
+    dictionary->destroy(dictionary->table[index]->value);
+  }
+
+  free(dictionary->table[index]);
+  dictionary->table[index] = NULL;
+  dictionary->size--;
+  return true;
+}
+
+
+void *dictionary_pop(dictionary_t *dictionary, const char *key, bool *err) {
+  unsigned int index = hash(key, dictionary);
+  if (dictionary->table[index] != NULL && dictionary->table[index]->key != NULL) {
+    void *value = dictionary->table[index]->value;
+    free(dictionary->table[index]);
+    dictionary->table[index] = NULL;
+    dictionary->size--;
+    *err = false;
+    return value;
+  }
+  *err = true;
+  return NULL;
+}
+
+
+
+
+bool dictionary_contains(dictionary_t *dictionary, const char *key) {
+  unsigned int index = hash(key, dictionary);
+  if (dictionary->table[index] == NULL) {
+    return false;
+  }
+  // Existing logic for key comparison
+  return strcmp(dictionary->table[index]->key, key) == 0;
+}
+
+
+size_t dictionary_size(dictionary_t *dictionary) {return dictionary->size;};
+
+void dictionary_destroy(dictionary_t *dictionary) {
+  if (dictionary == NULL) {
+    return;
+  }
+
+  // Free nodes and their contents
+  for (size_t i = 0; i < dictionary->table_size; i++) {
+    if (dictionary->table[i] != NULL) {
+      if (dictionary->destroy != NULL) {
+        dictionary->destroy(dictionary->table[i]->value); // Call destroy function if provided
+      }
+      free(dictionary->table[i]);
+    }
+  }
+
+  // Free the table itself
+  free(dictionary->table);
+  free(dictionary);
+}
