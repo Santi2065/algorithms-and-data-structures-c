@@ -1,9 +1,8 @@
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
-#include "tp3.h"  // Include the tp3.h header file
+#include "tp3.h"
 
-#define INITIAL_TABLE_SIZE 10000  // Adjust as needed
+#define INITIAL_TABLE_SIZE 1000
 #define LOAD_FACTOR_THRESHOLD 0.75
 
 struct dictionary {
@@ -20,13 +19,11 @@ struct node {
   struct node *next;
 };
 
-// Function definitions
-
 dictionary_t *dictionary_create(destroy_f destroy) {
   // Allocate memory for the dictionary
   dictionary_t *dictionary = malloc(sizeof(dictionary_t));
   if (dictionary == NULL) {
-    return NULL; // Handle memory allocation error
+    return NULL;
   }
 
   // Initialize dictionary members
@@ -34,7 +31,7 @@ dictionary_t *dictionary_create(destroy_f destroy) {
   dictionary->destroy = destroy;
   dictionary->table = malloc(dictionary->table_size * sizeof(struct node *));
   if (dictionary->table == NULL) {
-    free(dictionary); // Free dictionary if table allocation fails
+    free(dictionary);
     return NULL;
   }
 
@@ -46,6 +43,25 @@ dictionary_t *dictionary_create(destroy_f destroy) {
 
   return dictionary;
 }
+
+struct node *node_create(const char *key, void *value) {
+  struct node *new_node = malloc(sizeof(struct node));
+  if (new_node == NULL) {
+    return NULL; // Memory allocation error
+  }
+  // Allocate memory for the key
+  new_node->key = malloc(strlen(key) + 1);
+  if (new_node->key == NULL) {
+    free(new_node);
+    return NULL; // Memory allocation error
+  }
+  strcpy(new_node->key, key);
+  new_node->value = value;
+  new_node->next = NULL;
+
+  return new_node;
+}
+
 
 unsigned int jenkins_one_at_a_time_hash(const char *key, size_t length) {
     unsigned int hash = 0;
@@ -85,7 +101,7 @@ bool rehash(dictionary_t *dictionary) {
       struct node *next = current->next;  // Store next node before rehashing
 
       // Compute new index based on the new table size
-      unsigned int new_index = hash(current->key, dictionary) % new_size;
+      unsigned int new_index = jenkins_one_at_a_time_hash(current->key, strlen(current->key)) % new_size;
 
       // Move node to the new table
       current->next = new_table[new_index];
@@ -102,6 +118,7 @@ bool rehash(dictionary_t *dictionary) {
 
   return true;
 }
+
 
 
 bool dictionary_put(dictionary_t *dictionary, const char *key, void *value) {
@@ -126,18 +143,10 @@ bool dictionary_put(dictionary_t *dictionary, const char *key, void *value) {
   }
 
   // Key does not exist, create a new node and add it to the list
-  struct node *new_node = malloc(sizeof(struct node));
+  struct node *new_node = node_create(key, value);
   if (new_node == NULL) {
     return false; // Memory allocation error
   }
-  // Allocate memory for the key (instead of strdup)
-  new_node->key = malloc(strlen(key) + 1);
-  if (new_node->key == NULL) {
-    free(new_node);
-    return false; // Memory allocation error
-  }
-  strcpy(new_node->key, key);
-  new_node->value = value;
   new_node->next = dictionary->table[index];
   dictionary->table[index] = new_node;
 
@@ -195,8 +204,11 @@ bool dictionary_delete(dictionary_t *dictionary, const char *key) {
         prev->next = current->next;
       }
 
-      // Do not destroy the value here
+      // Free the key and the value
       free(current->key);
+      if (dictionary->destroy != NULL) {
+        dictionary->destroy(current->value); // Free value if destroy function exists
+      }
       free(current);
       dictionary->size--;
 
