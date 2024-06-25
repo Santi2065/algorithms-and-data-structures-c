@@ -1,0 +1,21 @@
+Resultados de Terminal
+1)
+La cantidad de nodos de la componente conexa mas grande es 855802 y la cantidad de componentes conexas es 2746
+2)
+El camino minimo tomaria 215.1269135592381 horas
+3)
+El grafo tiene 11669313 triangulos
+4)
+El diametro del grafo es 22 (usando 100 samples)
+5)
+el top 10 de vertices son:[('726079', 2), ('444394', 2), ('38', 1), ('479937', 1), ('695805', 1), ('666762', 1), ('638725', 1), ('446972', 1), ('279835', 1), ('28799', 1)]
+6)
+El tamaño del ciclo mas largo es 13392 (usando 100 muestras)
+
+Puntos Extra
+1)
+hay [11669313, 613531, 8155665, 105509335] de 3,4,5 y 6 lados poligonos en el grafo (Estimacion tomando 4000 random samples para 4,5 y 6 lados)
+2)
+Coeficiente de clustering global dirigido: 0.365133010406906
+3)
+Vértice con más betweenness centrality: 885605 con valor: 2811 (Estimacion tomando 4000 random samples)

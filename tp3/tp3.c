@@ -1,9 +1,12 @@
 #include "tp3.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
+#include <stdio.h>
+
 
 //Constantes para rehash
-#define INITIAL_TABLE_SIZE 64
+#define INITIAL_TABLE_SIZE 5
 #define LOAD_FACTOR_THRESHOLD 0.75
 
 struct dictionary {
@@ -227,4 +230,177 @@ void dictionary_destroy(dictionary_t *dictionary) {
   }
   free(dictionary->table);
   free(dictionary);
+}
+
+//tp3 puntos extra
+//Lista con modificaciones (+4 puntos)
+//Queremos que nuestra lista guarde elementos una sola vez. Si un elemento ya existía
+//queremos que insert devuelve false y no haga nada.
+//Para optimizar la consulta de si un elemento está o no contenido vamos a usar un counting
+//filter:
+//● Si el elemento no está en el counting filter, insertamos
+//● Si el elemento está en el counting filter recorremos la lista porque puede ser un falso
+//positivo y verificamos que efectivamente este
+
+
+typedef struct modified_list modified_list_t;
+typedef int (*compare_f)(void *, void *);
+
+
+//Estructura de un nodo de lista modificada
+struct node_modified {
+  void *element;
+  struct node_modified *next;
+};
+
+//Estructura de la lista
+struct modified_list {
+  struct node_modified *head;
+  struct node_modified *tail;
+  size_t size;
+  //uso el diccionario como filter, con la key como el elemento y el value como el elemento(al no poder insertar mas de una vez, no cuento)
+  dictionary_t *filter;
+  destroy_f destroy;
+  compare_f compare;
+};
+
+
+//Funcion para crear la lista
+modified_list_t *create_list(destroy_f destroy, compare_f compare) {
+  modified_list_t *list = malloc(sizeof(modified_list_t));
+  if (list == NULL) {
+    return NULL;
+  }
+  list->head = NULL;
+  list->tail = NULL;
+  list->size = 0;
+  list->filter = dictionary_create(destroy);
+  list->destroy = destroy;
+  list->compare = compare;
+  if (list->filter == NULL) {
+    free(list);
+    return NULL;
+  }
+  return list;
+}
+
+//exists
+bool exists(dictionary_t *filter, char * key) {
+  bool err;
+  void *value = dictionary_get(filter, key, &err);
+  return value != NULL;
+}
+
+
+//insert si existe en filter, buscarlo manual
+bool insert(modified_list_t *list, void *element) {
+  const char key = (const char)(element);
+  if (exists(list->filter, &key)) {
+    struct node_modified *current = list->head;
+    while (current != NULL) {
+      if (list->compare(current->element, element) == 0) {
+        return false;
+      }
+      current = current->next;
+    }
+  }
+  struct node_modified *new_node = malloc(sizeof(struct node_modified));
+  if (new_node == NULL) {
+    return false;
+  }
+  new_node->element = element;
+  new_node->next = NULL;
+  if (list->head == NULL) {
+    list->head = new_node;
+  } else {
+    list->tail->next = new_node;
+  }
+  list->tail = new_node;
+  list->size++;
+  dictionary_put(list->filter, &key, element);
+  return true;
+}
+  
+//delete
+bool delete(modified_list_t *list, void *element) {
+  struct node_modified *prev = NULL;
+  struct node_modified *current = list->head;
+  while (current != NULL) {
+    if (list->compare(current->element, element) == 0) {
+      if (prev == NULL) {
+        list->head = current->next;
+      } else {
+        prev->next = current->next;
+      }
+      if (list->destroy != NULL) {
+        list->destroy(current->element);
+      }
+      free(current);
+      list->size--;
+      return true;
+    }
+    prev = current;
+    current = current->next;
+  }
+  return false;
+}
+
+
+//destroy
+void destroy_list(modified_list_t *list) {
+  struct node_modified *current = list->head;
+  while (current != NULL) {
+    struct node_modified *next = current->next;
+    if (list->destroy != NULL) {
+      list->destroy(current->element);
+    }
+    free(current);
+    current = next;
+  }
+  dictionary_destroy(list->filter);
+  free(list);
+}
+
+//funciones auxiliares para tests
+int compare(void *a, void *b) {
+  return a == b ? 0 : 1;
+}
+
+void destroy(void *element) {
+}
+
+//tests lista modificada
+void test_modified_list() {
+  modified_list_t *list = create_list(destroy, compare);
+  if (list == NULL) {
+    printf("Error al crear la lista\n");
+    return;
+  }
+  if (insert(list, (void *)1) != true) {
+    printf("Error al insertar el elemento 1\n");
+    return;
+  }
+  if (insert(list, (void *)2) != true) {
+    printf("Error al insertar el elemento 2\n");
+    return;
+  }
+  if (insert(list, (void *)1) != false) {
+    printf("Error al insertar el elemento 1\n");
+    return;
+  }
+  if (delete(list, (void *)2) != true) {
+    printf("Error al eliminar el elemento 2\n");
+    return;
+  }
+  if (delete(list, (void *)2) != false) {
+    printf("Error al eliminar el elemento 2\n");
+    return;
+  }
+  destroy_list(list);
+  printf("Tests de lista modificada pasaron\n");
+}
+
+int main() {
+  test_modified_list();
+  return 0;
 }
