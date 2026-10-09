@@ -141,6 +141,6 @@ The test harnesses, makefiles, Dockerfiles, the interface headers of TP1–TP3 a
   title        = {Algorithms and Data Structures: Course Notes, C Implementations and a Web-Graph Analysis},
   year         = {2024},
   howpublished = {Universidad de San Andr{\'e}s, Algorithms and Data Structures},
-  url          = {https://github.com/Santi2065/Algoritmos_2024}
+  url          = {https://github.com/Santi2065/algorithms-and-data-structures-c}
 }
 ```
