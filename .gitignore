@@ -1,0 +1,12 @@
+# Compiled test binaries (built by the makefiles)
+tp1/tp1
+tp1/tests
+tp2/tp2
+tp3/tp3
+
+# Python
+__pycache__/
+*.pyc
+
+# Windows download metadata
+*:Zone.Identifier
