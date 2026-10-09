@@ -131,7 +131,7 @@ python docs/figures/make_figures.py
 
 ## Acknowledgements
 
-The test harnesses, makefiles, Dockerfiles, the interface headers of TP1–TP3 and the `Graph` class of TP4 were distributed with the assignments by the course teaching staff. The web graph is the `web-Google` dataset from the Stanford Large Network Dataset Collection (SNAP), originally released for the 2002 Google Programming Contest.
+The test harnesses, makefiles, Dockerfiles, the interface headers of TP1–TP3 and the `Graph` class of TP4 were distributed with the assignments by the course teaching staff. The web graph is the `web-Google` dataset from the Stanford Large Network Dataset Collection (SNAP), originally released for the 2002 Google Programming Contest. Dataset reference: J. Leskovec, K. Lang, A. Dasgupta and M. W. Mahoney, "Community Structure in Large Networks: Natural Cluster Sizes and the Absence of Large Well-Defined Clusters", *Internet Mathematics* 6(1), 29–123, 2009.
 
 ## Citation
 
